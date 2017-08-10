@@ -9,7 +9,7 @@
 
 jQuery( function() {
     wx.config({
-        debug: true,                    	//true开启调试模式。
+        debug: false,                    	//true开启调试模式。
         appId: Drupal.settings.tri_wechat_image_field.appId, 
         timestamp: Drupal.settings.tri_wechat_image_field.timestamp, 
         nonceStr: Drupal.settings.tri_wechat_image_field.nonceStr, 

@@ -38,7 +38,6 @@ function tri_wechat_image_field_field_widget_form(&$form, &$form_state, $field, 
 	//wechat init
 	$wc = new WeiChat(WECHAT_APPID, WECHAT_APPSECRET, WECHAT_TOKEN);
 	$jscfg = $wc->getJswxConfig();
-	dsm($jscfg);
 	
 //	drupal_add_js(array('tri_wechat_image_field' => array(
 //		'appId' => $jscfg['appId'],
@@ -130,10 +129,10 @@ function tri_wechat_image_field_field_is_empty($item, $field) {
 function tri_wechat_image_field_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors) {
 	foreach($items as $delta => $item) {
 		if(!empty($item['server_id'])) {
-			if( drupal_strlen($item['server_id']) > 10) {
+			if( drupal_strlen($item['server_id']) < 32) {
 				$errors[$field['field_name']][$langcode][$delta][] = array(
 					'error' => 'server_id_length',
-					'message' => t('%name: the id length should be more than 10 charaters.',array('%name' => $instance['label'])),
+					'message' => t('%name: the id length should be more than 32 charaters.',array('%name' => $instance['label'])),
 				);
 			}
 			
