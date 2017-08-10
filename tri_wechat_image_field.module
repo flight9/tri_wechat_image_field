@@ -1,0 +1,143 @@
+<?php
+module_load_include('php', 'tri_wechat_api', 'wechat_account_test');
+module_load_include('php', 'tri_wechat_api', 'weichat.class');
+
+
+/*
+ * Implements hook_field_info()
+ */
+function tri_wechat_image_field_field_info() {
+	return array(
+		'tri_wechat_image_field_photo' => array(
+			'label' => t('Wechat photo'),
+			'description' => t('This field stores server_id of the photo taken from wechat client.'),
+			'default_widget' => 'tri_wechat_image_field_button',
+			'default_formatter' => 'tri_wechat_image_field_raw',
+		),
+	);
+}
+
+
+/*
+ * Implements hook_field_widget_info()
+ */
+function tri_wechat_image_field_field_widget_info() {
+	return array(
+		'tri_wechat_image_field_button' => array(
+			'label' => t('Click button to take photo'),
+			'field types' => array('tri_wechat_image_field_photo'),
+		),
+	);
+}
+
+/*
+ * Implements hook_field_widget_form
+ */
+function tri_wechat_image_field_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element){
+	#dsm($field);
+	//wechat init
+	$wc = new WeiChat(WECHAT_APPID, WECHAT_APPSECRET, WECHAT_TOKEN);
+	$jscfg = $wc->getJswxConfig();
+	dsm($jscfg);
+	
+//	drupal_add_js(array('tri_wechat_image_field' => array(
+//		'appId' => $jscfg['appId'],
+//		'timestamp'=> $jscfg['timestamp'], 
+//		'nonceStr'=> $jscfg['nonceStr'], 
+//		'signature'=> $jscfg['signature'], 
+//	)), array('type' => 'setting'));
+	
+	if($field['cardinality'] == 1) {
+		$element['#type'] = 'fieldset';
+	}
+	
+	//prepare js varialbles
+	$setting = array(
+		'appId' => $jscfg['appId'],
+		'timestamp'=> $jscfg['timestamp'], 
+		'nonceStr'=> $jscfg['nonceStr'], 
+		'signature'=> $jscfg['signature'], 
+	);
+	
+	$element['server_id'] = array(
+		'#type' => 'textfield',		//maybe: hidden
+		'#field_prefix' => t('ServerId: '),
+		'#size' => 65,
+		'#default_value' => isset($items[$delta]['server_id'])? $items[$delta]['server_id']: '',
+		'#attributes' => array(
+			'class' => array('textfield-of-serverid'),
+			'readonly' => array('readonly'),
+		),
+		'#suffix' => '<a href="javascript:;" onclick="takePhoto();">Take Photo</a>',
+		'#attached' => array(
+			'js' => array(
+				array(
+					'data' => array('tri_wechat_image_field' => $setting),
+					'type' => 'setting',
+				),
+				drupal_get_path('module', 'tri_wechat_image_field') . '/js/jweixin-1.2.0.js',
+				drupal_get_path('module', 'tri_wechat_image_field') . '/js/wechat_image_fun.js',
+			)
+		),
+	);
+	
+	return $element;
+}
+
+/*
+ * Implements hook_field_formatter_info()
+ */
+function tri_wechat_image_field_field_formatter_info() {
+	return array(
+		'tri_wechat_image_field_raw' => array(
+			'label' => t('Raw server_id value'),
+			'field types' => array('tri_wechat_image_field_photo'),
+		),
+	);
+}
+
+/*
+ * Implements hook_field_formatter_view()
+ */
+function tri_wechat_image_field_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+	$element = array();
+	
+	switch($display['type']) {
+		case 'tri_wechat_image_field_raw':
+			foreach($items as $delta=>$value) {
+				$element[$delta] = array(
+					'#type' => 'markup',
+					'#markup' => t('@id',array('@id'=> $value['server_id'])),
+				);
+			}
+		
+			break;
+	}
+	
+	return $element;
+}
+
+/*
+ * Implements hook_field_is_empty()
+ */
+function tri_wechat_image_field_field_is_empty($item, $field) {
+	return empty($item['server_id']);
+}
+
+/*
+ * Implements hook_field_validate()
+ */
+function tri_wechat_image_field_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors) {
+	foreach($items as $delta => $item) {
+		if(!empty($item['server_id'])) {
+			if( drupal_strlen($item['server_id']) > 10) {
+				$errors[$field['field_name']][$langcode][$delta][] = array(
+					'error' => 'server_id_length',
+					'message' => t('%name: the id length should be more than 10 charaters.',array('%name' => $instance['label'])),
+				);
+			}
+			
+		}
+	}
+}
+

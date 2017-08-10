@@ -1,0 +1,26 @@
+<?php
+
+/*
+ * Implements hook_field_schema
+ */
+function tri_wechat_image_field_field_schema($field) {
+	$columns = array(
+		'server_id' => array(
+			'type' => 'varchar',
+			'length' => 128,	
+			'not null' => FALSE,
+		),
+	);
+	
+	$indexes = array(
+		'server_id' => array('server_id'),
+	);
+	
+	return array(
+		'columns' => $columns,
+		'indexes' => $indexes,
+	);
+}
+
+
+
