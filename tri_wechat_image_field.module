@@ -24,7 +24,7 @@ function tri_wechat_image_field_field_info() {
 function tri_wechat_image_field_field_widget_info() {
 	return array(
 		'tri_wechat_image_field_button' => array(
-			'label' => t('Click button to take photo'),
+			'label' => t('Take photo button'),
 			'field types' => array('tri_wechat_image_field_photo'),
 		),
 	);
@@ -59,7 +59,7 @@ function tri_wechat_image_field_field_widget_form(&$form, &$form_state, $field, 
 	);
 	
 	$element['server_id'] = array(
-		'#type' => 'textfield',		//maybe: hidden
+		'#type' => 'textfield',		//should be: hidden
 		'#field_prefix' => t('ServerId: '),
 		'#size' => 65,
 		'#default_value' => isset($items[$delta]['server_id'])? $items[$delta]['server_id']: '',
@@ -67,7 +67,7 @@ function tri_wechat_image_field_field_widget_form(&$form, &$form_state, $field, 
 			'class' => array('textfield-of-serverid'),
 			'readonly' => array('readonly'),
 		),
-		'#suffix' => '<a href="javascript:;" onclick="takePhoto();">Take Photo</a>',
+		'#suffix' => '<a href="javascript:;" class="button" onclick="takePhoto(this);">Take Photo</a><img class="thumbnail-of-serverid" height="25px" width="25px" />',
 		'#attached' => array(
 			'js' => array(
 				array(
@@ -120,6 +120,7 @@ function tri_wechat_image_field_field_formatter_view($entity_type, $entity, $fie
  * Implements hook_field_is_empty()
  */
 function tri_wechat_image_field_field_is_empty($item, $field) {
+	#dsm(empty($item['server_id']));
 	return empty($item['server_id']);
 }
 
