@@ -24,7 +24,9 @@ function takePhoto(alink) {
     //console.log(thumbnail.attr('src'));
     
     if( textfield.val().length != 0) {
-        alert('not empty!');
+        if(confirm("替换当前照片？") == false ) {
+            return;
+        }
     }
     
     wx.chooseImage({
