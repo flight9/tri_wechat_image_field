@@ -13,6 +13,8 @@ function tri_wechat_image_field_field_info() {
 			'description' => t('This field stores server_id of the photo taken from wechat client.'),
 			'default_widget' => 'tri_wechat_image_field_button',
 			'default_formatter' => 'tri_wechat_image_field_raw',
+			'property_type' => 'text',
+			'property_callbacks' => array('entity_metadata_field_text_property_callback'),
 		),
 	);
 }
@@ -59,7 +61,7 @@ function tri_wechat_image_field_field_widget_form(&$form, &$form_state, $field, 
 	);
 	
 	$element['server_id'] = array(
-		'#type' => 'textfield',		//should be: hidden
+		'#type' => 'hidden',		//should be: hidden
 		'#field_prefix' => t('ServerId: '),
 		'#size' => 65,
 		'#default_value' => isset($items[$delta]['server_id'])? $items[$delta]['server_id']: '',
@@ -141,3 +143,64 @@ function tri_wechat_image_field_field_validate($entity_type, $entity, $field, $i
 	}
 }
 
+
+/*
+ * Implements hook_node_presave()
+ */
+function tri_wechat_image_field_node_presave($node) {
+	tri_wechat_image_field_download_image_save($node);
+}
+
+/**
+ * Download the image from wechat server and save to actual image field
+ * @param object $node
+ */
+function tri_wechat_image_field_download_image_save($node) {
+	$nwp = entity_metadata_wrapper('node', $node);
+	dsm($node);#dsm($nwp->getPropertyInfo());
+	#dsm(_wrapper_debug($nwp));
+	
+	// this function is only for nodes of XXXX
+	if( $nwp->type->value() != 'data_entry') {
+		return;
+	}
+	
+	// check the media_id
+	$media_id = $nwp->field_wechat_photo->value();
+	if( empty($media_id)) {
+		return;
+	}
+	
+	// download the file and new file object
+	$directory = 'public://tri-wechat-image';
+	if( !file_prepare_directory($directory)) {
+		drupal_mkdir($directory);
+	}
+	$filename = '/'.date('YmdHis').'.'.substr($media_id,0,8).'.jpg';
+	$wc = new WeiChat(WECHAT_APPID, WECHAT_APPSECRET, WECHAT_TOKEN);
+	$acc_token = $wc->getAccesstoken();
+	$remote_path = "https://api.weixin.qq.com/cgi-bin/media/get?access_token=$acc_token&media_id=$media_id";
+	$local_file = system_retrieve_file($remote_path, $directory.$filename, true, FILE_EXISTS_RENAME);
+	
+	// set the file
+	if(!$nwp->is_new && isset($nwp->field_photo->fid)) {
+		$ok = file_delete($nwp->field_photo->file);
+	}
+	$nwp->field_photo->file = $local_file;
+	
+	// The following codes cause error: 1062 Duplicate entry
+	//	$nwp->save();
+}
+
+/**
+ * help function for EMW
+ * @param wrapper $w
+ * @return array
+ */
+function _wrapper_debug($w) {
+	$values = array();
+	foreach ($w->getPropertyInfo() as $key => $val) {
+		$values[$key] = $w->$key->value();
+	}
+	return $values;
+}
