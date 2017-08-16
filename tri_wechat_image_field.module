@@ -148,7 +148,7 @@ function tri_wechat_image_field_field_validate($entity_type, $entity, $field, $i
  * Implements hook_node_presave()
  */
 function tri_wechat_image_field_node_presave($node) {
-	dsm( $node);
+	#dsm( $node);
 	#dsm( field_info_instances('node', $node->type));
 	#dsm( field_info_field('field_wechat_photo'));
 	
@@ -157,7 +157,11 @@ function tri_wechat_image_field_node_presave($node) {
 	foreach($fii as $field_name => $v) {
 		$fif = field_info_field($field_name);
 		if( $fif['type'] == 'tri_wechat_image_field_photo') {
-			tri_wechat_image_field_photo_download_save($node, $field_name);
+			#dsm($fif);
+			$settings = $v['widget']['settings'];
+			$target_field = isset($settings['tri_wechat_image_field_photo_target_field'])? 
+				$settings['tri_wechat_image_field_photo_target_field']: 'field_photo';
+			tri_wechat_image_field_photo_download_save($node, $field_name, $target_field);
 		}
 	}
 }
@@ -165,15 +169,17 @@ function tri_wechat_image_field_node_presave($node) {
 /**
  * Download the image from wechat server and save to actual image field
  * @param object $node
- * @param string $field_name
+ * @param string $this_field_name
+ * @param string $target_image_field
  */
-function tri_wechat_image_field_photo_download_save($node, $field_name) {
+function tri_wechat_image_field_photo_download_save($node, $this_field_name, $target_image_field) {
+	// create wrapper
 	$nwp = entity_metadata_wrapper('node', $node);
 	#dsm($nwp->getPropertyInfo());
 	#dsm(_wrapper_debug($nwp));
 	
 	// check the media_id
-	$media_id = $nwp->$field_name->value();
+	$media_id = $nwp->$this_field_name->value();
 	if( empty($media_id)) {
 		return;
 	}
@@ -190,17 +196,17 @@ function tri_wechat_image_field_photo_download_save($node, $field_name) {
 	$local_file = system_retrieve_file($remote_path, $directory.$filename, true, FILE_EXISTS_RENAME);
 	
 	// set new file/ delete old
-	if(!$nwp->is_new && isset($nwp->field_photo->fid)) {
-		$ok = file_delete($nwp->field_photo->file);
+	if(!$nwp->is_new && isset($nwp->$target_image_field->fid)) {
+		$ok = file_delete($nwp->$target_image_field->file);
 	}
-	$nwp->field_photo->file = $local_file;
+	$nwp->$target_image_field->file = $local_file;
 	
 	// The following codes cause error: 1062 Duplicate entry
 	//	$nwp->save();
 }
 
 /**
- * help function for EMW
+ * debug function for EMW
  * @param wrapper $w
  * @return array
  */
@@ -211,3 +217,22 @@ function _wrapper_debug($w) {
 	}
 	return $values;
 }
+
+/*
+ * Implements hook_field_widget_settings_form
+ */
+function tri_wechat_image_field_field_widget_settings_form($field, $instance) {
+	#dsm($instance);
+	$element = array(
+		'tri_wechat_image_field_photo_target_field' => array(
+			'#type' => 'textfield',
+			'#title' => t('Target image field'),
+			'#description' => t('After submitting the downloaded wechat photo will be saved to the target image field.'),
+			'#default_value' => isset($instance['widget']['settings']['tri_wechat_image_field_photo_target_field'])?
+				$instance['widget']['settings']['tri_wechat_image_field_photo_target_field']: 'field_photo',
+		),
+	);
+	
+	return $element;
+}
+
