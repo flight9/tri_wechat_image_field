@@ -148,25 +148,32 @@ function tri_wechat_image_field_field_validate($entity_type, $entity, $field, $i
  * Implements hook_node_presave()
  */
 function tri_wechat_image_field_node_presave($node) {
-	tri_wechat_image_field_download_image_save($node);
+	dsm( $node);
+	#dsm( field_info_instances('node', $node->type));
+	#dsm( field_info_field('field_wechat_photo'));
+	
+	// pick up the nodes using our custom field type
+	$fii = field_info_instances('node', $node->type);
+	foreach($fii as $field_name => $v) {
+		$fif = field_info_field($field_name);
+		if( $fif['type'] == 'tri_wechat_image_field_photo') {
+			tri_wechat_image_field_photo_download_save($node, $field_name);
+		}
+	}
 }
 
 /**
  * Download the image from wechat server and save to actual image field
  * @param object $node
+ * @param string $field_name
  */
-function tri_wechat_image_field_download_image_save($node) {
+function tri_wechat_image_field_photo_download_save($node, $field_name) {
 	$nwp = entity_metadata_wrapper('node', $node);
-	dsm($node);#dsm($nwp->getPropertyInfo());
+	#dsm($nwp->getPropertyInfo());
 	#dsm(_wrapper_debug($nwp));
 	
-	// this function is only for nodes of XXXX
-	if( $nwp->type->value() != 'data_entry') {
-		return;
-	}
-	
 	// check the media_id
-	$media_id = $nwp->field_wechat_photo->value();
+	$media_id = $nwp->$field_name->value();
 	if( empty($media_id)) {
 		return;
 	}
@@ -182,7 +189,7 @@ function tri_wechat_image_field_download_image_save($node) {
 	$remote_path = "https://api.weixin.qq.com/cgi-bin/media/get?access_token=$acc_token&media_id=$media_id";
 	$local_file = system_retrieve_file($remote_path, $directory.$filename, true, FILE_EXISTS_RENAME);
 	
-	// set the file
+	// set new file/ delete old
 	if(!$nwp->is_new && isset($nwp->field_photo->fid)) {
 		$ok = file_delete($nwp->field_photo->file);
 	}
