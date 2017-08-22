@@ -181,15 +181,26 @@ function tri_wechat_image_field_node_presave($node) {
  * @param string $target_image_field
  */
 function tri_wechat_image_field_photo_download_save($node, $this_field_name, $target_image_field) {
+	#dsm( $node);
+	
 	// create wrapper
 	$nwp = entity_metadata_wrapper('node', $node);
 	#dsm($nwp->getPropertyInfo());
 	#dsm(_wrapper_debug($nwp));
 	
-	// check the media_id
+	// check whether we should update $media_id to image field
 	$media_id = $nwp->$this_field_name->value();
-	if( empty($media_id)) {
-		return;
+	if( $nwp->is_new->value()) {	//when insert
+		if( empty($media_id)) {
+			return;
+		}
+	} else {						//when update
+		$ori_wp = entity_metadata_wrapper('node', $node->original);
+		$old_media_id = $ori_wp->$this_field_name->value();
+		#dsm( $old_media_id. '=='. $media_id);
+		if( empty($media_id) || $old_media_id == $media_id) {
+			return;
+		}
 	}
 	
 	// download the file and new file object
@@ -203,8 +214,8 @@ function tri_wechat_image_field_photo_download_save($node, $this_field_name, $ta
 	$remote_path = "https://api.weixin.qq.com/cgi-bin/media/get?access_token=$acc_token&media_id=$media_id";
 	$local_file = system_retrieve_file($remote_path, $directory.$filename, true, FILE_EXISTS_RENAME);
 	
-	// set new file/ delete old
-	if(!$nwp->is_new && isset($nwp->$target_image_field->fid)) {
+	// set new file/delete old
+	if(!$nwp->is_new->value() && isset($nwp->$target_image_field->fid)) {
 		$ok = file_delete($nwp->$target_image_field->file);
 	}
 	$nwp->$target_image_field->file = $local_file;
