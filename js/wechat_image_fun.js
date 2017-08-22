@@ -22,16 +22,20 @@ jQuery( function() {
     hideOppositeControls(in_wechat);
 });
 
-function hideOppositeControls(in_wechat) {
-    if(in_wechat) {
-        photo_field = jQuery('#edit-field-photo');
-        image_data = photo_field.find('div.image-widget-data');
-        description = photo_field.find('div.description');
-        image_data.hide(); 
-        description.hide();
+function hideOppositeControls( in_wechat) {
+    if( in_wechat) {
+        //alert(Drupal.settings.tri_wechat_image_field.targetFields);
+        var targetFields = Drupal.settings.tri_wechat_image_field.targetFields.split(',');
+        for(i=0; i<targetFields.length; i++) {
+            var id_target_field = '#edit-'+ targetFields[i].replace(/_/g, "-");
+            //alert(id_target_field);
+            var photo_field = jQuery( id_target_field);
+            photo_field.find('div.image-widget-data').hide();
+            photo_field.find('div.description').hide();
+        }
     } else {
-        input_serverid = jQuery('input.textfield-of-serverid');
-        div_wechat_photo = input_serverid.parent().parent().parent();
+        var input_serverid = jQuery('input.textfield-of-serverid');
+        var div_wechat_photo = input_serverid.parents('div.field-type-tri-wechat-image-field-photo');
         div_wechat_photo.hide();
     }
 }
@@ -41,11 +45,6 @@ function takePhoto(alink) {
     var thumbnail = jQuery(alink).parent().find('img.thumbnail-of-serverid');
     //console.log(thumbnail.attr('src'));
     
-//    field_photoxxx
-//    convert _ to -
-//    add edit-
-//    edit-field-photoxxx
-        
     if( textfield.val().length != 0) {
         if(confirm("替换当前照片(Replace the photo)？") == false ) {
             return;

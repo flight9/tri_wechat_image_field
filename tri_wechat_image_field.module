@@ -36,10 +36,15 @@ function tri_wechat_image_field_field_widget_info() {
  * Implements hook_field_widget_form
  */
 function tri_wechat_image_field_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element){
-	#dsm($field);
+	#dsm($instance);
 	//wechat init
 	$wc = new WeiChat(WECHAT_APPID, WECHAT_APPSECRET, WECHAT_TOKEN);
 	$jscfg = $wc->getJswxConfig();
+	
+	//target field names (we use $GLOBALS[] if more than one)
+	$GLOBALS['tri_wechat_image_field_photo_target_field'][] = 
+		$instance['widget']['settings']['tri_wechat_image_field_photo_target_field'];
+	$targetFields = implode(',', $GLOBALS['tri_wechat_image_field_photo_target_field']);
 	
 //	drupal_add_js(array('tri_wechat_image_field' => array(
 //		'appId' => $jscfg['appId'],
@@ -47,18 +52,20 @@ function tri_wechat_image_field_field_widget_form(&$form, &$form_state, $field, 
 //		'nonceStr'=> $jscfg['nonceStr'], 
 //		'signature'=> $jscfg['signature'], 
 //	)), array('type' => 'setting'));
-	
-	if($field['cardinality'] == 1) {
-		$element['#type'] = 'fieldset';
-	}
-	
+
 	//prepare js varialbles
 	$setting = array(
 		'appId' => $jscfg['appId'],
 		'timestamp'=> $jscfg['timestamp'], 
 		'nonceStr'=> $jscfg['nonceStr'], 
 		'signature'=> $jscfg['signature'], 
+		'targetFields'=> $targetFields, 
 	);
+	
+	if($field['cardinality'] == 1) {
+		$element['#type'] = 'fieldset';
+	}
+	
 	
 	$element['server_id'] = array(
 		'#type' => 'hidden',		//should be: hidden
@@ -153,6 +160,7 @@ function tri_wechat_image_field_node_presave($node) {
 	#dsm( field_info_field('field_wechat_photo'));
 	
 	// pick up the nodes using our custom field type
+	// TODO: bad efficiency? need to be improved
 	$fii = field_info_instances('node', $node->type);
 	foreach($fii as $field_name => $v) {
 		$fif = field_info_field($field_name);
