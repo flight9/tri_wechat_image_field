@@ -1,6 +1,6 @@
 name = Tri Wechat Image Field
 description = Image fields using wechat jssdk
-package = zzzz
+package = TriFocus
 core = 7.x
 dependencies[] = tri_wechat_api
 
